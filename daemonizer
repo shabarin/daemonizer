@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# This script executes given command in a loop and forwards SIGTERM to it.
+# It can be used to run php scripts in 'daemonized' way  and control execution via tools like supervisord.
+
+SLEEP=$1
+shift
+COMMAND=$@
+
+if [ -z "$SLEEP" ] || [ -z "$COMMAND" ]
+then
+    echo
+    echo "Usage: daemonizer <sleep> <command>"
+    echo
+    exit
+fi
+
+shallStop=0
+
+_term() {
+  if [[ ${child} ]]
+  then
+    echo "Caught SIGTERM signal in bash trap, terminating child process PID=${child}"
+    kill -TERM ${child}
+  else
+    echo "no child process to kill"
+  fi
+  shallStop=1
+}
+trap _term SIGTERM
+
+# for debug purposes: catch SIGINT and send SIGTERM to inner process
+_int() {
+  if [[ ${child} ]]
+  then
+    echo "Caught SIGINT signal in bash trap, terminating child process PID=${child}"
+    kill -TERM ${child}
+  else
+    echo "no child process to kill"
+  fi
+  shallStop=1
+}
+trap _int SIGINT
+
+while [[ ${shallStop} != 1 ]]
+do
+    ${COMMAND} &
+    child=$!
+    echo -n "Waiting for execution of ${COMMAND} with PID=${child}..."
+    wait "${child}"
+    echo "Script finished"
+
+    echo -n "Sleeping for ${SLEEP} seconds..."
+    sleep ${SLEEP} &
+    wait
+    echo "OK"
+done
