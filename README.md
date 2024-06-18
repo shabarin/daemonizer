@@ -1,5 +1,5 @@
 # daemonizer
-Run any command in a loop as if it's a daemon, correctly forwarding SIGTERM to it
+Run any command in a loop as if it were a daemon, correctly forwarding SIGTERM to it
 
 This script executes given command in a loop and forwards SIGTERM to it.
 
